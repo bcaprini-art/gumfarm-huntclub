@@ -4,8 +4,6 @@ const { auth, adminOnly } = require('../middleware/auth')
 
 const router = express.Router()
 
-const CARD_FEE = 0.04
-
 // GET /api/billing/my-payments
 router.get('/my-payments', auth, async (req, res) => {
   const payments = await prisma.payment.findMany({
@@ -48,23 +46,6 @@ router.post('/pay-cash', adminOnly, async (req, res) => {
     },
   })
   res.json(payment)
-})
-
-// POST /api/billing/stripe-intent
-router.post('/stripe-intent', auth, async (req, res) => {
-  if (!process.env.STRIPE_SECRET_KEY) return res.status(503).json({ error: 'Stripe not configured' })
-  const stripe = require('../lib/stripe')
-  const { amount, bookingId } = req.body
-  if (!amount) return res.status(400).json({ error: 'Amount required' })
-
-  const amountWithFee = Math.round(amount * (1 + CARD_FEE) * 100) // cents
-  const intent = await stripe.paymentIntents.create({
-    amount: amountWithFee,
-    currency: 'usd',
-    metadata: { memberId: req.user.id, bookingId: bookingId || '' },
-  })
-
-  res.json({ clientSecret: intent.client_secret, fee: amount * CARD_FEE })
 })
 
 // GET /api/billing/all (admin)
