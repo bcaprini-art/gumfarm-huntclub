@@ -1,0 +1,142 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MemberType {
+  INDIVIDUAL
+  FAMILY
+  CORPORATE
+}
+
+enum Role {
+  MEMBER
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum BirdSpecies {
+  PHEASANT
+  CHUKAR
+  QUAIL
+}
+
+enum PaymentMethod {
+  CARD
+  CASH
+  CHECK
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  REFUNDED
+}
+
+model CorporateAccount {
+  id            String   @id @default(cuid())
+  name          String
+  annualDue     Float    @default(0)
+  paidAnnualDue Boolean  @default(false)
+  members       Member[]
+  createdAt     DateTime @default(now())
+}
+
+model Member {
+  id                 String            @id @default(cuid())
+  email              String            @unique
+  name               String
+  password           String
+  phone              String?
+  type               MemberType        @default(INDIVIDUAL)
+  corporateAccountId String?
+  seasonBirdBalance  Int               @default(0)
+  seasonBirdsUsed    Int               @default(0)
+  waiverSigned       Boolean           @default(false)
+  waiverSignedAt     DateTime?
+  stripeCustomerId   String?
+  role               Role              @default(MEMBER)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  bookings           Booking[]
+  payments           Payment[]
+  corporateAccount   CorporateAccount? @relation(fields: [corporateAccountId], references: [id])
+}
+
+model Field {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  maxHunters  Int       @default(6)
+  active      Boolean   @default(true)
+  bookings    Booking[]
+}
+
+model Guide {
+  id       String    @id @default(cuid())
+  name     String
+  phone    String?
+  active   Boolean   @default(true)
+  bookings Booking[]
+}
+
+model Booking {
+  id                   String        @id @default(cuid())
+  memberId             String
+  fieldId              String
+  date                 DateTime
+  timeSlot             String
+  partySize            Int
+  guideRequested       Boolean       @default(false)
+  guideId              String?
+  pheasantsReleased    Int           @default(0)
+  chukarsReleased      Int           @default(0)
+  quailReleased        Int           @default(0)
+  birdsHarvested       Int           @default(0)
+  birdCleaning         Boolean       @default(false)
+  trapHouse            Boolean       @default(false)
+  status               BookingStatus @default(PENDING)
+  totalFee             Float         @default(0)
+  cancellationDeadline DateTime?
+  cancelledAt          DateTime?
+  notes                String?
+  createdAt            DateTime      @default(now())
+  member               Member        @relation(fields: [memberId], references: [id])
+  field                Field         @relation(fields: [fieldId], references: [id])
+  guide                Guide?        @relation(fields: [guideId], references: [id])
+  payments             Payment[]
+}
+
+model BirdInventory {
+  id             String      @id @default(cuid())
+  species        BirdSpecies @unique
+  quantityOnHand Int         @default(0)
+  updatedAt      DateTime    @updatedAt
+}
+
+model Payment {
+  id                    String        @id @default(cuid())
+  memberId              String
+  bookingId             String?
+  amount                Float
+  processingFee         Float         @default(0)
+  netAmount             Float
+  method                PaymentMethod
+  status                PaymentStatus @default(PENDING)
+  stripePaymentIntentId String?
+  notes                 String?
+  paidAt                DateTime?
+  createdAt             DateTime      @default(now())
+  member                Member        @relation(fields: [memberId], references: [id])
+  booking               Booking?      @relation(fields: [bookingId], references: [id])
+}
