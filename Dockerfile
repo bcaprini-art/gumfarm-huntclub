@@ -2,18 +2,18 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy and validate package.json first
-COPY backend/package.json ./package.json
-COPY backend/package-lock.json ./package-lock.json
+COPY backend/package.json ./
 
-RUN node -e "JSON.parse(require('fs').readFileSync('package.json','utf8')); console.log('package.json valid');"
-RUN npm ci
+RUN npm install --ignore-scripts
 
 COPY backend/prisma ./prisma
+
 RUN npx prisma generate
 
 COPY backend/src ./src
 
 EXPOSE 4003
 
-CMD ["npm", "start"]
+ENV NODE_ENV=production
+
+CMD npx prisma migrate deploy && node src/index.js
