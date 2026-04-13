@@ -1,9 +1,13 @@
 FROM node:20-alpine
-# cache-bust: 2
+
 WORKDIR /app
 
-COPY backend/package*.json ./
-RUN npm install
+# Copy and validate package.json first
+COPY backend/package.json ./package.json
+COPY backend/package-lock.json ./package-lock.json
+
+RUN node -e "JSON.parse(require('fs').readFileSync('package.json','utf8')); console.log('package.json valid');"
+RUN npm ci
 
 COPY backend/prisma ./prisma
 RUN npx prisma generate
