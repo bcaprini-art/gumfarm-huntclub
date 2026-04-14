@@ -10,6 +10,7 @@ const membersRoutes = require('./routes/members')
 const birdsRoutes = require('./routes/birds')
 const billingRoutes = require('./routes/billing')
 const adminRoutes = require('./routes/admin')
+const setupRoutes = require('./routes/setup')
 
 const app = express()
 
@@ -27,6 +28,7 @@ app.use('/api/members', membersRoutes)
 app.use('/api/birds', birdsRoutes)
 app.use('/api/billing', billingRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/setup', setupRoutes)
 
 // 404
 app.use((req, res) => {
