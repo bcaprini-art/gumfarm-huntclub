@@ -34,9 +34,12 @@ export default function Book() {
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
 
-  const totalBirds = Number(form.pheasantsReleased) + Number(form.chukarsReleased) + Number(form.quailReleased)
+  const numPheasants = parseInt(form.pheasantsReleased) || 0
+  const numChukars = parseInt(form.chukarsReleased) || 0
+  const numQuail = parseInt(form.quailReleased) || 0
+  const totalBirds = numPheasants + numChukars + numQuail
   const estimatedFee = () => {
-    let fee = Number(form.pheasantsReleased) * 22 + Number(form.chukarsReleased) * 16 + Number(form.quailReleased) * 10
+    let fee = numPheasants * 22 + numChukars * 16 + numQuail * 10
     if (form.guideRequested) fee += 100
     if (form.birdCleaning) fee += 5 * totalBirds
     return fee
@@ -48,7 +51,13 @@ export default function Book() {
     setError('')
     setLoading(true)
     try {
-      await api.createBooking({ ...form, partySize: Number(form.partySize) })
+      await api.createBooking({
+        ...form,
+        partySize: parseInt(form.partySize) || 1,
+        pheasantsReleased: numPheasants,
+        chukarsReleased: numChukars,
+        quailReleased: numQuail,
+      })
       navigate('/my-bookings')
     } catch (err) {
       setError(err.message)
