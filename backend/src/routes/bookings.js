@@ -83,13 +83,19 @@ router.post('/', auth, async (req, res) => {
   const isMember = req.user.role === 'MEMBER' || req.user.role === 'ADMIN'
   const huntDate = new Date(date)
 
+  // Parse bird counts as safe integers
+  const numPheasants = Math.max(0, parseInt(pheasantsReleased) || 0)
+  const numChukars = Math.max(0, parseInt(chukarsReleased) || 0)
+  const numQuail = Math.max(0, parseInt(quailReleased) || 0)
+  const totalBirdsCount = numPheasants + numChukars + numQuail
+
   // Calculate fee
   let fee = 0
-  fee += calcBirdPrice('PHEASANT', pheasantsReleased || 0, isMember, huntDate)
-  fee += calcBirdPrice('CHUKAR', chukarsReleased || 0, isMember, huntDate)
-  fee += calcBirdPrice('QUAIL', quailReleased || 0, isMember, huntDate)
+  fee += calcBirdPrice('PHEASANT', numPheasants, isMember, huntDate)
+  fee += calcBirdPrice('CHUKAR', numChukars, isMember, huntDate)
+  fee += calcBirdPrice('QUAIL', numQuail, isMember, huntDate)
   if (guideRequested) fee += GUIDE_FEE
-  if (birdCleaning) fee += BIRD_CLEANING_FEE * ((pheasantsReleased || 0) + (chukarsReleased || 0) + (quailReleased || 0))
+  if (birdCleaning) fee += BIRD_CLEANING_FEE * totalBirdsCount
 
   const cancellationDeadline = new Date(huntDate)
   cancellationDeadline.setHours(cancellationDeadline.getHours() - 24)
@@ -103,9 +109,9 @@ router.post('/', auth, async (req, res) => {
       partySize: parseInt(partySize),
       guideRequested: !!guideRequested,
       guideId: guideRequested && guideId ? guideId : null,
-      pheasantsReleased: parseInt(pheasantsReleased) || 0,
-      chukarsReleased: parseInt(chukarsReleased) || 0,
-      quailReleased: parseInt(quailReleased) || 0,
+      pheasantsReleased: numPheasants,
+      chukarsReleased: numChukars,
+      quailReleased: numQuail,
       birdCleaning: !!birdCleaning,
       trapHouse: !!trapHouse,
       status: 'CONFIRMED',
@@ -117,7 +123,7 @@ router.post('/', auth, async (req, res) => {
   })
 
   // Deduct from bird balance
-  const totalBirds = (parseInt(pheasantsReleased) || 0) + (parseInt(chukarsReleased) || 0) + (parseInt(quailReleased) || 0)
+  const totalBirds = totalBirdsCount
   if (totalBirds > 0) {
     await prisma.member.update({
       where: { id: req.user.id },
